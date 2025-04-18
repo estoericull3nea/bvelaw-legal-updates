@@ -1,0 +1,178 @@
+/* BVE Legal Updates Frontend Styles */
+
+.bve-legal-updates-wrapper {
+    max-width: 1200px;
+    margin: 20px auto;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+/* Tabs */
+.bve-lu-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #e0e0e0;
+    padding-bottom: 0;
+}
+
+.bve-lu-tab {
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-bottom: none;
+    padding: 12px 20px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 500;
+    color: #555;
+    transition: all 0.3s ease;
+    border-radius: 4px 4px 0 0;
+    position: relative;
+    bottom: -2px;
+}
+
+.bve-lu-tab:hover {
+    background: #e8e8e8;
+    color: #333;
+}
+
+.bve-lu-tab.active {
+    background: #ffffff;
+    color: #0073aa;
+    border-color: #0073aa;
+    border-bottom: 2px solid #ffffff;
+    font-weight: 600;
+}
+
+/* Content Area */
+.bve-lu-content {
+    background: #ffffff;
+    padding: 20px;
+    min-height: 200px;
+}
+
+.bve-lu-loading {
+    text-align: center;
+    padding: 40px;
+    font-size: 16px;
+    color: #666;
+}
+
+.bve-lu-updates {
+    /* Container for update items */
+}
+
+/* Update Item */
+.bve-lu-update-item {
+    background: #fafafa;
+    border: 1px solid #e0e0e0;
+    border-left: 4px solid #0073aa;
+    padding: 24px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+    transition: box-shadow 0.3s ease;
+}
+
+.bve-lu-update-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.bve-lu-heading {
+    margin: 0 0 10px 0;
+    font-size: 22px;
+    font-weight: 600;
+    color: #333;
+    line-height: 1.4;
+}
+
+.bve-lu-date {
+    font-size: 13px;
+    color: #777;
+    margin-bottom: 15px;
+    font-style: italic;
+}
+
+.bve-lu-text {
+    color: #555;
+    font-size: 15px;
+    line-height: 1.7;
+}
+
+.bve-lu-text p {
+    margin: 0 0 15px 0;
+}
+
+.bve-lu-text p:last-child {
+    margin-bottom: 0;
+}
+
+.bve-lu-text ul,
+.bve-lu-text ol {
+    margin: 0 0 15px 20px;
+    padding-left: 20px;
+}
+
+.bve-lu-text li {
+    margin-bottom: 8px;
+}
+
+.bve-lu-no-updates {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+    font-size: 16px;
+}
+
+.bve-lu-error {
+    text-align: center;
+    padding: 40px;
+    color: #d63638;
+    font-size: 16px;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+    .bve-lu-tabs {
+        flex-direction: column;
+        gap: 0;
+        border-bottom: none;
+    }
+    
+    .bve-lu-tab {
+        border-radius: 0;
+        border-bottom: 1px solid #ddd;
+        bottom: 0;
+    }
+    
+    .bve-lu-tab.active {
+        border-left: 4px solid #0073aa;
+        border-bottom: 1px solid #ddd;
+    }
+    
+    .bve-lu-content {
+        padding: 15px;
+    }
+    
+    .bve-lu-update-item {
+        padding: 16px;
+    }
+    
+    .bve-lu-heading {
+        font-size: 19px;
+    }
+    
+    .bve-lu-text {
+        font-size: 14px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .bve-lu-tab {
+        padding: 10px 15px;
+        font-size: 14px;
+    }
+    
+    .bve-lu-heading {
+        font-size: 17px;
+    }
+}
