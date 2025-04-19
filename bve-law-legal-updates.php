@@ -291,6 +291,34 @@ function bve_lu_add_page()
 }
 
 /**
+ * Generate summary from content
+ */
+function bve_lu_generate_summary($content, $length = 150) {
+    // Strip HTML tags
+    $text = wp_strip_all_tags($content);
+    
+    // Remove extra whitespace
+    $text = preg_replace('/\s+/', ' ', $text);
+    $text = trim($text);
+    
+    // If content is shorter than length, return as is
+    if (strlen($text) <= $length) {
+        return $text;
+    }
+    
+    // Truncate to length
+    $summary = substr($text, 0, $length);
+    
+    // Find last space to avoid cutting words
+    $last_space = strrpos($summary, ' ');
+    if ($last_space !== false) {
+        $summary = substr($summary, 0, $last_space);
+    }
+    
+    return $summary . '...';
+}
+
+/**
  * Shortcode: [bve_legal_updates]
  */
 function bve_lu_shortcode($atts)
@@ -311,7 +339,7 @@ function bve_lu_shortcode($atts)
         </div>
 
         <div class="bve-lu-content">
-            <div class="bve-lu-loading" style="display: none;">Loading...</div>
+            <div class="bve-lu-loading" style="display: none;">Loading</div>
             <div class="bve-lu-updates"></div>
         </div>
     </div>
@@ -349,11 +377,23 @@ function bve_lu_ajax_get_updates()
         echo '<p class="bve-lu-no-updates">No updates available in this category.</p>';
     } else {
         foreach ($updates as $update) {
+            $summary = bve_lu_generate_summary($update->content, 180);
+            $formatted_date = date('F j, Y', strtotime($update->created_at));
+            $content_text = wp_strip_all_tags($update->content);
+            $content_text = preg_replace('/\s+/', ' ', $content_text);
+            $content_text = trim($content_text);
+            $has_more = strlen($content_text) > 180;
             ?>
             <div class="bve-lu-update-item">
                 <h3 class="bve-lu-heading"><?php echo esc_html($update->heading); ?></h3>
-                <div class="bve-lu-date"><?php echo esc_html(date('F j, Y', strtotime($update->created_at))); ?></div>
-                <div class="bve-lu-text"><?php echo wp_kses_post($update->content); ?></div>
+                <div class="bve-lu-date"><?php echo esc_html($formatted_date); ?></div>
+                <?php if ($has_more): ?>
+                    <div class="bve-lu-summary"><?php echo esc_html($summary); ?></div>
+                    <div class="bve-lu-text" style="display: none;"><?php echo wp_kses_post($update->content); ?></div>
+                    <a href="#" class="bve-lu-read-more" data-expanded="false">Read More</a>
+                <?php else: ?>
+                    <div class="bve-lu-text"><?php echo wp_kses_post($update->content); ?></div>
+                <?php endif; ?>
             </div>
             <?php
         }

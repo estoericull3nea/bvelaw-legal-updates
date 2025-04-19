@@ -27,6 +27,29 @@ jQuery(document).ready(function($) {
         loadUpdates(category);
     });
     
+    // Read More / Read Less handler (delegated event)
+    $(document).on('click', '.bve-lu-read-more', function(e) {
+        e.preventDefault();
+        
+        var $button = $(this);
+        var $item = $button.closest('.bve-lu-update-item');
+        var $summary = $item.find('.bve-lu-summary');
+        var $text = $item.find('.bve-lu-text');
+        var isExpanded = $button.data('expanded') === 'true' || $button.data('expanded') === true;
+        
+        if (isExpanded) {
+            // Collapse
+            $text.slideUp(300);
+            $summary.slideDown(300);
+            $button.text('Read More').data('expanded', false);
+        } else {
+            // Expand
+            $summary.slideUp(300);
+            $text.slideDown(300);
+            $button.text('Read Less').data('expanded', true);
+        }
+    });
+    
     /**
      * Load updates via AJAX
      */
