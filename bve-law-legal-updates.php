@@ -59,6 +59,127 @@ function bve_lu_get_categories()
 }
 
 /**
+ * Add query vars for single update page
+ */
+function bve_lu_add_query_vars($vars) {
+    $vars[] = 'legal_update_id';
+    return $vars;
+}
+add_filter('query_vars', 'bve_lu_add_query_vars');
+
+/**
+ * Get permalink for a legal update
+ */
+function bve_lu_get_permalink($update_id) {
+    $current_url = (is_ssl() ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+    $base_url = remove_query_arg('legal_update_id', $current_url);
+    
+    // If we're on a page with the shortcode, use that page URL
+    global $post;
+    if (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'bve_legal_updates')) {
+        $base_url = get_permalink($post->ID);
+    } else {
+        // Fallback to current page
+        $base_url = get_permalink();
+    }
+    
+    return add_query_arg('legal_update_id', $update_id, $base_url);
+}
+
+/**
+ * Display single update content
+ */
+function bve_lu_display_single_update($content) {
+    $update_id = get_query_var('legal_update_id');
+    
+    if ($update_id) {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'legal_updates';
+        $update = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table_name WHERE id = %d",
+            intval($update_id)
+        ));
+        
+        if ($update) {
+            $categories = bve_lu_get_categories();
+            $formatted_date = date('F j, Y', strtotime($update->created_at));
+            $category_name = $categories[$update->category] ?? $update->category;
+            
+            // Get referrer URL for back link
+            $back_url = wp_get_referer();
+            if (!$back_url) {
+                global $post;
+                if (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'bve_legal_updates')) {
+                    $back_url = get_permalink($post->ID);
+                } else {
+                    $back_url = home_url();
+                }
+            }
+            $back_url = remove_query_arg('legal_update_id', $back_url);
+            
+            ob_start();
+            ?>
+            <div class="bve-lu-single-wrapper">
+                <a href="<?php echo esc_url($back_url); ?>" class="bve-lu-back-link">← Back to Legal Updates</a>
+                <div class="bve-lu-single">
+                    <span class="bve-lu-single-category"><?php echo esc_html($category_name); ?></span>
+                    <h1 class="bve-lu-single-heading"><?php echo esc_html($update->heading); ?></h1>
+                    <div class="bve-lu-single-date"><?php echo esc_html($formatted_date); ?></div>
+                    <div class="bve-lu-single-content"><?php echo wp_kses_post($update->content); ?></div>
+                </div>
+            </div>
+            <?php
+            return ob_get_clean();
+        }
+    }
+    
+    return $content;
+}
+add_filter('the_content', 'bve_lu_display_single_update');
+
+/**
+ * Set page title for single update
+ */
+function bve_lu_single_update_title($title) {
+    $update_id = get_query_var('legal_update_id');
+    
+    if ($update_id) {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'legal_updates';
+        $update = $wpdb->get_row($wpdb->prepare(
+            "SELECT heading FROM $table_name WHERE id = %d",
+            intval($update_id)
+        ));
+        
+        if ($update) {
+            return esc_html($update->heading) . ' - Legal Update';
+        }
+    }
+    
+    return $title;
+}
+add_filter('wp_title', 'bve_lu_single_update_title', 10, 1);
+add_filter('document_title_parts', function($title_parts) {
+    $update_id = get_query_var('legal_update_id');
+    
+    if ($update_id) {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'legal_updates';
+        $update = $wpdb->get_row($wpdb->prepare(
+            "SELECT heading FROM $table_name WHERE id = %d",
+            intval($update_id)
+        ));
+        
+        if ($update) {
+            $title_parts['title'] = esc_html($update->heading);
+            $title_parts['site'] = get_bloginfo('name');
+        }
+    }
+    
+    return $title_parts;
+});
+
+/**
  * Add admin menu
  */
 function bve_lu_admin_menu()
@@ -377,22 +498,20 @@ function bve_lu_ajax_get_updates()
         echo '<p class="bve-lu-no-updates">No updates available in this category.</p>';
     } else {
         foreach ($updates as $update) {
-            $summary = bve_lu_generate_summary($update->content, 180);
+            $summary = bve_lu_generate_summary($update->content, 150);
             $formatted_date = date('F j, Y', strtotime($update->created_at));
             $content_text = wp_strip_all_tags($update->content);
             $content_text = preg_replace('/\s+/', ' ', $content_text);
             $content_text = trim($content_text);
-            $has_more = strlen($content_text) > 180;
+            $has_more = strlen($content_text) > 150;
+            $permalink = bve_lu_get_permalink($update->id);
             ?>
             <div class="bve-lu-update-item">
                 <h3 class="bve-lu-heading"><?php echo esc_html($update->heading); ?></h3>
                 <div class="bve-lu-date"><?php echo esc_html($formatted_date); ?></div>
+                <div class="bve-lu-summary"><?php echo esc_html($summary); ?></div>
                 <?php if ($has_more): ?>
-                    <div class="bve-lu-summary"><?php echo esc_html($summary); ?></div>
-                    <div class="bve-lu-text" style="display: none;"><?php echo wp_kses_post($update->content); ?></div>
-                    <a href="#" class="bve-lu-read-more" data-expanded="false">Read More</a>
-                <?php else: ?>
-                    <div class="bve-lu-text"><?php echo wp_kses_post($update->content); ?></div>
+                    <a href="<?php echo esc_url($permalink); ?>" class="bve-lu-read-more">Read More</a>
                 <?php endif; ?>
             </div>
             <?php
@@ -412,16 +531,21 @@ function bve_lu_enqueue_frontend_assets()
 {
     global $post;
 
-    // Only enqueue if shortcode is present
-    if (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'bve_legal_updates')) {
+    // Enqueue if shortcode is present or if viewing single update
+    $is_single_update = get_query_var('legal_update_id');
+    
+    if ($is_single_update || (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'bve_legal_updates'))) {
         wp_enqueue_style('bve-legal-updates', BVE_LU_PLUGIN_URL . 'assets/legal-updates.css', array(), BVE_LU_VERSION);
 
-        wp_enqueue_script('bve-legal-updates', BVE_LU_PLUGIN_URL . 'assets/legal-updates.js', array('jquery'), BVE_LU_VERSION, true);
+        // Only enqueue script if shortcode is present (not needed for single page)
+        if (!$is_single_update && is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'bve_legal_updates')) {
+            wp_enqueue_script('bve-legal-updates', BVE_LU_PLUGIN_URL . 'assets/legal-updates.js', array('jquery'), BVE_LU_VERSION, true);
 
-        wp_localize_script('bve-legal-updates', 'bveLegalUpdates', array(
-            'ajax_url' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('bve_lu_ajax')
-        ));
+            wp_localize_script('bve-legal-updates', 'bveLegalUpdates', array(
+                'ajax_url' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('bve_lu_ajax')
+            ));
+        }
     }
 }
 add_action('wp_enqueue_scripts', 'bve_lu_enqueue_frontend_assets');
