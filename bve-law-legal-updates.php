@@ -150,11 +150,8 @@ function bve_lu_parse_request()
             $formatted_date = date('F j, Y', strtotime($update->created_at));
             $category_name = $categories[$update->category] ?? $update->category;
 
-            // Get referrer URL for back link
-            $back_url = wp_get_referer();
-            if (!$back_url) {
-                $back_url = home_url();
-            }
+            // Back link to legal updates page
+            $back_url = home_url('/legal-updates/');
 
             // Output the page
             ?>
