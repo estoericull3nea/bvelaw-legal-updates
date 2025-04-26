@@ -1,6 +1,9 @@
 jQuery(document).ready(function($) {
     'use strict';
     
+    // Cache object to store loaded category content
+    var categoryCache = {};
+    
     // Load first tab on page load
     var $tabs = $('.bve-lu-tab');
     var $content = $('.bve-lu-updates');
@@ -28,9 +31,16 @@ jQuery(document).ready(function($) {
     });
     
     /**
-     * Load updates via AJAX
+     * Load updates via AJAX (with caching)
      */
     function loadUpdates(category) {
+        // Check if content is already cached
+        if (categoryCache[category]) {
+            // Use cached content - no loading needed
+            $content.html(categoryCache[category]);
+            return;
+        }
+        
         // Show loading
         $loading.show();
         $content.html('');
@@ -47,6 +57,8 @@ jQuery(document).ready(function($) {
                 $loading.hide();
                 
                 if (response.success) {
+                    // Store in cache
+                    categoryCache[category] = response.data;
                     $content.html(response.data);
                 } else {
                     $content.html('<p class="bve-lu-error">Error loading updates. Please try again.</p>');
