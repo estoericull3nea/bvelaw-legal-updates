@@ -1,10 +1,13 @@
 /* BVE Legal Updates Frontend Styles - Professional Brown Theme */
 
+/* Import Playfair Display Font */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap');
+
 .bve-legal-updates-wrapper {
     max-width: 1200px;
     margin: 30px auto;
     padding: 0 20px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    font-family: "Playfair Display", Sans-serif;
 }
 
 /* Tabs */
@@ -14,6 +17,7 @@
     gap: 0;
     margin-bottom: 30px;
     border-bottom: 2px solid #8B6F47;
+    justify-content: center;
 }
 
 .bve-lu-tab {
@@ -157,12 +161,55 @@
     grid-column: 1 / -1;
 }
 
+/* Single Page Hero Section */
+.bve-lu-single-hero {
+    position: relative;
+    width: 100%;
+    min-height: 500px;
+    background-image: url('https://bvelawph.com/wp-content/uploads/2025/06/DSC00207-scaled.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 80px 20px;
+}
+
+.bve-lu-single-hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1;
+}
+
+.bve-lu-single-hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 1000px;
+    width: 100%;
+}
+
+.bve-lu-single-hero-heading {
+    margin: 0;
+    font-size: 42px;
+    font-weight: 700;
+    color: #FFFFFF;
+    line-height: 1.3;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    font-family: "Playfair Display", Sans-serif;
+}
+
 /* Single Page Styles */
 .bve-lu-single-wrapper {
     max-width: 900px;
     margin: 40px auto;
     padding: 0 20px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    font-family: "Playfair Display", Sans-serif;
 }
 
 .bve-lu-single {
@@ -201,15 +248,6 @@
     font-weight: 500;
 }
 
-.bve-lu-single-heading {
-    margin: 0;
-    padding: 35px 40px 25px;
-    font-size: 32px;
-    font-weight: 700;
-    color: #1a1a1a;
-    line-height: 1.3;
-    border-bottom: 2px solid #F0F0F0;
-}
 
 .bve-lu-single-content {
     padding: 35px 40px 40px;
@@ -361,9 +399,13 @@
         align-items: flex-start;
     }
     
-    .bve-lu-single-heading {
-        font-size: 26px;
-        padding: 25px 20px 20px;
+    .bve-lu-single-hero {
+        min-height: 300px;
+        padding: 60px 20px;
+    }
+    
+    .bve-lu-single-hero-heading {
+        font-size: 32px;
     }
     
     .bve-lu-single-content {
@@ -406,9 +448,13 @@
         padding: 12px 15px;
     }
     
-    .bve-lu-single-heading {
-        font-size: 22px;
-        padding: 20px 15px 15px;
+    .bve-lu-single-hero {
+        min-height: 250px;
+        padding: 40px 15px;
+    }
+    
+    .bve-lu-single-hero-heading {
+        font-size: 24px;
     }
     
     .bve-lu-single-content {

@@ -172,6 +172,12 @@ function bve_lu_parse_request()
                     wp_body_open();
                 }
                 ?>
+                <div class="bve-lu-single-hero">
+                    <div class="bve-lu-single-hero-overlay"></div>
+                    <div class="bve-lu-single-hero-content">
+                        <h1 class="bve-lu-single-hero-heading"><?php echo esc_html($update->heading); ?></h1>
+                    </div>
+                </div>
                 <div class="bve-lu-single-wrapper">
                     <a href="<?php echo esc_url($back_url); ?>" class="bve-lu-back-link">← Back to Legal Updates</a>
                     <article class="bve-lu-single">
@@ -180,7 +186,6 @@ function bve_lu_parse_request()
                             <time class="bve-lu-single-date"
                                 datetime="<?php echo esc_attr(date('Y-m-d', strtotime($update->created_at))); ?>"><?php echo esc_html($formatted_date); ?></time>
                         </div>
-                        <h1 class="bve-lu-single-heading"><?php echo esc_html($update->heading); ?></h1>
                         <div class="bve-lu-single-content">
                             <?php echo wp_kses_post($update->content); ?>
                         </div>
