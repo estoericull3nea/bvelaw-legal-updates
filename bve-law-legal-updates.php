@@ -538,7 +538,7 @@ function bve_lu_shortcode($atts)
         </div>
 
         <div class="bve-lu-content">
-            <div class="bve-lu-loading" style="display: none;">Loading</div>
+            <div class="bve-lu-loading" style="display: none;">Loading...</div>
             <div class="bve-lu-updates"></div>
         </div>
     </div>
