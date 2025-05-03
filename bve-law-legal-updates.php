@@ -18,15 +18,17 @@ define('BVE_LU_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('BVE_LU_PLUGIN_URL', plugin_dir_url(__FILE__));
 
 /**
- * Activation hook - Create custom table and flush rewrite rules
+ * Activation hook - Create custom tables
  */
 function bve_lu_activate()
 {
     global $wpdb;
 
-    $table_name = $wpdb->prefix . 'legal_updates';
     $charset_collate = $wpdb->get_charset_collate();
+    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
 
+    // Create legal_updates table
+    $table_name = $wpdb->prefix . 'legal_updates';
     $sql = "CREATE TABLE $table_name (
         id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
         heading VARCHAR(255) NOT NULL,
@@ -38,24 +40,53 @@ function bve_lu_activate()
         KEY category (category),
         KEY created_at (created_at)
     ) $charset_collate;";
-
-    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
     dbDelta($sql);
+
+    // Create categories table
+    $categories_table = $wpdb->prefix . 'legal_updates_categories';
+    $sql_categories = "CREATE TABLE $categories_table (
+        id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+        slug VARCHAR(100) NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY slug (slug)
+    ) $charset_collate;";
+    dbDelta($sql_categories);
+
+    // Insert default categories if table is empty
+    $count = $wpdb->get_var("SELECT COUNT(*) FROM $categories_table");
+    if ($count == 0) {
+        $default_categories = array(
+            array('slug' => 'commercial-taxation', 'name' => 'Commercial & Taxation'),
+            array('slug' => 'litigation-adr', 'name' => 'Litigation & Alternative Dispute Resolution'),
+            array('slug' => 'employment', 'name' => 'Employment'),
+            array('slug' => 'intellectual-property', 'name' => 'Intellectual Property'),
+            array('slug' => 'immigration-citizenship', 'name' => 'Immigration and Citizenship')
+        );
+        foreach ($default_categories as $cat) {
+            $wpdb->insert($categories_table, $cat, array('%s', '%s'));
+        }
+    }
 }
 register_activation_hook(__FILE__, 'bve_lu_activate');
 
 /**
- * Get allowed categories
+ * Get allowed categories from database
  */
 function bve_lu_get_categories()
 {
-    return array(
-        'commercial-taxation' => 'Commercial & Taxation',
-        'litigation-adr' => 'Litigation & Alternative Dispute Resolution',
-        'employment' => 'Employment',
-        'intellectual-property' => 'Intellectual Property',
-        'immigration-citizenship' => 'Immigration and Citizenship'
-    );
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'legal_updates_categories';
+    $categories = $wpdb->get_results("SELECT slug, name FROM $table_name ORDER BY name ASC");
+
+    $result = array();
+    foreach ($categories as $cat) {
+        $result[$cat->slug] = $cat->name;
+    }
+
+    return $result;
 }
 
 /**
@@ -279,6 +310,15 @@ function bve_lu_admin_menu()
         'bve-legal-updates-add',
         'bve_lu_add_page'
     );
+
+    add_submenu_page(
+        'bve-legal-updates',
+        'Categories',
+        'Categories',
+        'manage_options',
+        'bve-legal-updates-categories',
+        'bve_lu_categories_page'
+    );
 }
 add_action('admin_menu', 'bve_lu_admin_menu');
 
@@ -484,6 +524,276 @@ function bve_lu_add_page()
                 <a href="<?php echo admin_url('admin.php?page=bve-legal-updates'); ?>" class="button">Cancel</a>
             </p>
         </form>
+    </div>
+    <?php
+}
+
+/**
+ * Ensure categories table exists
+ */
+function bve_lu_ensure_categories_table()
+{
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'legal_updates_categories';
+
+    // Check if table exists
+    $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'") == $table_name;
+
+    if (!$table_exists) {
+        $charset_collate = $wpdb->get_charset_collate();
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+
+        $sql = "CREATE TABLE $table_name (
+            id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            slug VARCHAR(100) NOT NULL,
+            name VARCHAR(255) NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY slug (slug)
+        ) $charset_collate;";
+
+        dbDelta($sql);
+
+        // Insert default categories if table was just created
+        $count = $wpdb->get_var("SELECT COUNT(*) FROM $table_name");
+        if ($count == 0) {
+            $default_categories = array(
+                array('slug' => 'commercial-taxation', 'name' => 'Commercial & Taxation'),
+                array('slug' => 'litigation-adr', 'name' => 'Litigation & Alternative Dispute Resolution'),
+                array('slug' => 'employment', 'name' => 'Employment'),
+                array('slug' => 'intellectual-property', 'name' => 'Intellectual Property'),
+                array('slug' => 'immigration-citizenship', 'name' => 'Immigration and Citizenship')
+            );
+            foreach ($default_categories as $cat) {
+                $wpdb->insert($table_name, $cat, array('%s', '%s'));
+            }
+        }
+    }
+}
+
+/**
+ * Categories CRUD page
+ */
+function bve_lu_categories_page()
+{
+    global $wpdb;
+
+    if (!current_user_can('manage_options')) {
+        wp_die(__('You do not have sufficient permissions to access this page.'));
+    }
+
+    // Ensure table exists
+    bve_lu_ensure_categories_table();
+
+    $table_name = $wpdb->prefix . 'legal_updates_categories';
+    $edit_mode = false;
+    $category_data = null;
+
+    // Handle delete action
+    if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['id'])) {
+        if (!isset($_GET['_wpnonce']) || !wp_verify_nonce($_GET['_wpnonce'], 'bve_lu_delete_category_' . $_GET['id'])) {
+            wp_die(__('Security check failed.'));
+        }
+
+        $id = intval($_GET['id']);
+
+        // Check if category is being used
+        $updates_table = $wpdb->prefix . 'legal_updates';
+        $category = $wpdb->get_var($wpdb->prepare("SELECT slug FROM $table_name WHERE id = %d", $id));
+
+        if ($category) {
+            $in_use = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $updates_table WHERE category = %s",
+                $category
+            ));
+
+            if ($in_use > 0) {
+                echo '<div class="notice notice-error"><p>Cannot delete category. It is being used by ' . $in_use . ' legal update(s).</p></div>';
+            } else {
+                $wpdb->delete($table_name, array('id' => $id), array('%d'));
+                echo '<div class="notice notice-success"><p>Category deleted successfully.</p></div>';
+            }
+        }
+    }
+
+    // Check if editing
+    if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) {
+        $edit_mode = true;
+        $id = intval($_GET['id']);
+        $category_data = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $id));
+
+        if (!$category_data) {
+            wp_die(__('Category not found.'));
+        }
+    }
+
+    // Handle form submission
+    if (isset($_POST['bve_lu_category_submit'])) {
+        if (!isset($_POST['bve_lu_category_nonce']) || !wp_verify_nonce($_POST['bve_lu_category_nonce'], 'bve_lu_save_category')) {
+            wp_die(__('Security check failed.'));
+        }
+
+        $name = sanitize_text_field($_POST['name']);
+        $slug = sanitize_text_field($_POST['slug']);
+
+        // Generate slug if empty
+        if (empty($slug)) {
+            $slug = strtolower($name);
+            $slug = preg_replace('/[^a-z0-9]+/', '-', $slug);
+            $slug = trim($slug, '-');
+        }
+
+        // Validate
+        if (empty($name)) {
+            echo '<div class="notice notice-error"><p>Category name is required.</p></div>';
+        } else {
+            $data = array(
+                'name' => $name,
+                'slug' => $slug
+            );
+
+            if ($edit_mode && isset($_POST['category_id'])) {
+                // Check if slug already exists (excluding current)
+                $existing = $wpdb->get_var($wpdb->prepare(
+                    "SELECT id FROM $table_name WHERE slug = %s AND id != %d",
+                    $slug,
+                    intval($_POST['category_id'])
+                ));
+
+                if ($existing) {
+                    echo '<div class="notice notice-error"><p>Category slug already exists. Please use a different slug.</p></div>';
+                } else {
+                    // Update existing
+                    $result = $wpdb->update(
+                        $table_name,
+                        $data,
+                        array('id' => intval($_POST['category_id'])),
+                        array('%s', '%s'),
+                        array('%d')
+                    );
+
+                    if ($result === false) {
+                        echo '<div class="notice notice-error"><p>Error updating category: ' . $wpdb->last_error . '</p></div>';
+                    } else {
+                        echo '<div class="notice notice-success"><p>Category updated successfully. <a href="' . admin_url('admin.php?page=bve-legal-updates-categories') . '">View all categories</a></p></div>';
+
+                        // Refresh data
+                        $category_data = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", intval($_POST['category_id'])));
+                    }
+                }
+            } else {
+                // Check if slug already exists
+                $existing = $wpdb->get_var($wpdb->prepare(
+                    "SELECT id FROM $table_name WHERE slug = %s",
+                    $slug
+                ));
+
+                if ($existing) {
+                    echo '<div class="notice notice-error"><p>Category slug already exists. Please use a different slug.</p></div>';
+                } else {
+                    // Insert new
+                    $result = $wpdb->insert($table_name, $data, array('%s', '%s'));
+
+                    if ($result === false) {
+                        echo '<div class="notice notice-error"><p>Error saving category: ' . $wpdb->last_error . '</p></div>';
+                    } else {
+                        echo '<div class="notice notice-success"><p>Category added successfully. <a href="' . admin_url('admin.php?page=bve-legal-updates-categories') . '">View all categories</a></p></div>';
+
+                        // Clear form
+                        $category_data = null;
+                        $edit_mode = false;
+                    }
+                }
+            }
+        }
+    }
+
+    // Get all categories
+    $categories = $wpdb->get_results("SELECT * FROM $table_name ORDER BY name ASC");
+
+    ?>
+    <div class="wrap">
+        <h1 class="wp-heading-inline"><?php echo $edit_mode ? 'Edit Category' : 'Categories'; ?></h1>
+        <?php if (!$edit_mode): ?>
+            <a href="<?php echo admin_url('admin.php?page=bve-legal-updates-categories&action=add'); ?>"
+                class="page-title-action">Add New</a>
+        <?php endif; ?>
+        <hr class="wp-header-end">
+
+        <?php if ($edit_mode || (isset($_GET['action']) && $_GET['action'] === 'add')): ?>
+            <!-- Add/Edit Form -->
+            <form method="post"
+                action="<?php echo admin_url('admin.php?page=bve-legal-updates-categories' . ($edit_mode ? '&action=edit&id=' . intval($_GET['id']) : '&action=add')); ?>">
+                <?php wp_nonce_field('bve_lu_save_category', 'bve_lu_category_nonce'); ?>
+                <?php if ($edit_mode && $category_data): ?>
+                    <input type="hidden" name="category_id" value="<?php echo esc_attr($category_data->id); ?>">
+                <?php endif; ?>
+
+                <table class="form-table">
+                    <tr>
+                        <th scope="row"><label for="name">Category Name *</label></th>
+                        <td>
+                            <input type="text" name="name" id="name" class="regular-text"
+                                value="<?php echo esc_attr($category_data->name ?? ''); ?>" required>
+                            <p class="description">The display name for this category.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="slug">Category Slug</label></th>
+                        <td>
+                            <input type="text" name="slug" id="slug" class="regular-text"
+                                value="<?php echo esc_attr($category_data->slug ?? ''); ?>">
+                            <p class="description">URL-friendly version of the name. Leave empty to auto-generate from name.</p>
+                        </td>
+                    </tr>
+                </table>
+
+                <p class="submit">
+                    <input type="submit" name="bve_lu_category_submit" class="button button-primary"
+                        value="<?php echo $edit_mode ? 'Update Category' : 'Add Category'; ?>">
+                    <a href="<?php echo admin_url('admin.php?page=bve-legal-updates-categories'); ?>" class="button">Cancel</a>
+                </p>
+            </form>
+        <?php else: ?>
+            <!-- List View -->
+            <table class="wp-list-table widefat fixed striped">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">ID</th>
+                        <th>Name</th>
+                        <th style="width: 200px;">Slug</th>
+                        <th style="width: 150px;">Created Date</th>
+                        <th style="width: 120px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($categories)): ?>
+                        <tr>
+                            <td colspan="5">No categories found. <a
+                                    href="<?php echo admin_url('admin.php?page=bve-legal-updates-categories&action=add'); ?>">Add
+                                    your first category</a>.</td>
+                        </tr>
+                    <?php else: ?>
+                        <?php foreach ($categories as $cat): ?>
+                            <tr>
+                                <td><?php echo esc_html($cat->id); ?></td>
+                                <td><strong><?php echo esc_html($cat->name); ?></strong></td>
+                                <td><code><?php echo esc_html($cat->slug); ?></code></td>
+                                <td><?php echo esc_html(date('M j, Y', strtotime($cat->created_at))); ?></td>
+                                <td>
+                                    <a
+                                        href="<?php echo admin_url('admin.php?page=bve-legal-updates-categories&action=edit&id=' . $cat->id); ?>">Edit</a>
+                                    |
+                                    <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=bve-legal-updates-categories&action=delete&id=' . $cat->id), 'bve_lu_delete_category_' . $cat->id); ?>"
+                                        onclick="return confirm('Are you sure you want to delete this category?');">Delete</a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
     </div>
     <?php
 }
