@@ -214,14 +214,12 @@
 
 .bve-lu-single {
     background: #FFFFFF;
-    border: 1px solid #E0E0E0;
     padding: 0;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .bve-lu-single-header {
     background: #F8F8F8;
-    border-bottom: 1px solid #E0E0E0;
     padding: 20px 40px;
     display: flex;
     justify-content: space-between;
@@ -321,7 +319,6 @@
 .bve-lu-single-content blockquote {
     margin: 24px 0;
     padding: 20px 25px;
-    border-left: 4px solid #8B6F47;
     background: #F8F8F8;
     font-style: italic;
     color: #555;
@@ -345,12 +342,10 @@
     font-size: 14px;
     font-weight: 500;
     transition: all 0.2s ease;
-    border: 1px solid #E0E0E0;
 }
 
 .bve-lu-back-link:hover {
     background: #E8E8E8;
-    border-color: #8B6F47;
 }
 
 /* Responsive Design */
