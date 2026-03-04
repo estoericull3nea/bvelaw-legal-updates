@@ -71,13 +71,8 @@
     background: #FFFFFF;
     border: 1px solid #E0E0E0;
     padding: 24px;
-    transition: box-shadow 0.2s ease;
     display: flex;
     flex-direction: column;
-}
-
-.bve-lu-update-item:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .bve-lu-heading {
@@ -200,7 +195,6 @@
     font-weight: 700;
     color: #FFFFFF;
     line-height: 1.3;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
     font-family: "Playfair Display", Sans-serif;
 }
 
@@ -215,7 +209,6 @@
 .bve-lu-single {
     background: #FFFFFF;
     padding: 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .bve-lu-single-header {
