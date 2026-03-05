@@ -5,6 +5,8 @@
  * Version: 1.1.0
  * Author: Ericson Palisoc
  * Text Domain: bve-legal-updates
+ * Requires at least: 5.2
+ * Requires PHP: 7.4
  *
  * @package BVE_Law_Legal_Updates
  */
