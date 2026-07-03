@@ -1,0 +1,9 @@
+#bve-lu-block-editor {
+    border: 1px solid #dcdcde;
+    min-height: 420px;
+    background: #fff;
+}
+
+#bve-lu-block-editor .block-editor-writing-flow {
+    padding: 16px;
+}

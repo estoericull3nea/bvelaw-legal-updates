@@ -1,0 +1,41 @@
+---
+alwaysApply: true
+---
+
+# Repository Guidelines
+
+## General Principles
+
+- Keep new modules and code concise.
+- Avoid over-engineering and oversized files.
+- Flag files that should be refactored before expanding them further.
+- Match the existing syntax, style, naming, and structure of the codebase.
+- Look for obvious bugs before making or finalizing changes.
+- Prefer concise, precise code and documentation changes.
+- Review existing files before refactoring or changing behavior.
+- For major changes, make a short to-do list and get user approval before implementation.
+- If context becomes confusing, write notes to `/docs/activity-log.md`.
+- Do not auto-commit activity logs or documentation-only notes unless explicitly asked.
+- Markdown filenames must use kebab-case, for example `some-description-changes.md`.
+- Comments must be one line and one sentence.
+- Do not use emojis or decorative special characters in comments.
+
+## Code Quality
+
+- Choose appropriate data structures and algorithms for the problem.
+- Follow least privilege and do not expose data unnecessarily.
+- Do not add external libraries unless clearly necessary.
+- Use the project dependency file for dependency versions.
+- Avoid redundancy unless it improves usability or clarity.
+
+## Version Control
+
+- Commit after significant changes when asked to work through git.
+- Keep commits focused and atomic.
+- Use clear commit messages.
+- Never push any branch unless explicitly asked.
+
+## AI Restrictions
+
+- Do not include customer personal data such as names, contacts, account numbers, or transactions unless the user explicitly approves an exemption.
+- Do not include credentials such as passwords, API keys, tokens, or connection strings.
